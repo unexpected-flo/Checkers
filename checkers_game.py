@@ -42,7 +42,10 @@ class Game:
         while self.ongoing:
             print("{} turn".format(self.active_player))
             self.play_turn(game_board, window)
-            # gui.redraw_board(window, game_board)
+            finished, winner = rules.game_over(game_board)
+            if finished:
+                self.ongoing = False
+                print("{} won".format(winner))
 
 
 if __name__ == "__main__":

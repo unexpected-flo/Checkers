@@ -235,9 +235,8 @@ def take_legal(capt_node, end_line, end_row):
     return False, None
 
 
-def execute_move(start_line, start_row, end_line, end_row, board, active_player):
+def execute_move(start_line, start_row, end_line, end_row, board, piece, active_player):
     """move the piece if the movement considered is legal"""
-    piece = piece_exists(start_line, start_row, board)
     if piece:
         if ((not piece.promoted
                 and pawn_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player)) or
@@ -261,25 +260,43 @@ def execute_take(end_line, end_row, board, capt_node):
         return False
 
 
+def game_over(board):
+    piece_counts = dict(zip(players, [0,0]))
+    for line in range(board_size):
+        for row in range(board_size):
+            piece = piece_exists(line, row, board)
+            if piece:
+                piece_counts[piece.owner] += 1
+    for player, pieces in piece_counts.items():
+        if pieces == 0:
+            players.remove(player)
+            return True, players[0]
+    return False, None
+
 class Turn:
     def __init__(self, active_player, board):
         self.player = active_player
         self.roots = find_all_possible_captures(board, self.player)
 
     def play_turn(self, start_line, start_row, end_line, end_row, board):
-        if self.roots:
-            for root in self.roots:
-                if (start_line, start_row) == root.coords:
-                    destination_node = execute_take(end_line, end_row, board, root)
-                    if destination_node:
-                        self.roots = [destination_node]
-                        branches = [destination_node.upper_left,
-                                    destination_node.upper_right,
-                                    destination_node.lower_left,
-                                    destination_node.lower_right]
-                        if not any(branches):
-                            return True
+        piece = piece_exists(start_line, start_row, board)
+        if piece:
+            if self.roots:
+                for root in self.roots:
+                    if (start_line, start_row) == root.coords:
+                        destination_node = execute_take(end_line, end_row, board, root)
+                        if destination_node:
+                            self.roots = [destination_node]
+                            branches = [destination_node.upper_left,
+                                        destination_node.upper_right,
+                                        destination_node.lower_left,
+                                        destination_node.lower_right]
+                            if not any(branches):
+                                pawn_to_promote(end_line, piece)
+                                return True
 
-        else:
-            moved = execute_move(start_line, start_row, end_line, end_row, board, self.player)
-            return moved
+            else:
+                moved = execute_move(start_line, start_row, end_line, end_row, board, piece, self.player)
+                if moved:
+                    pawn_to_promote(end_line, piece)
+                return moved
