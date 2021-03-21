@@ -33,7 +33,7 @@ class Game:
         while self.ongoing:
             gui.draw_cli_board(game_board)
             start_line, start_row = [int(x) for x in input().split(sep=",")]
-
+            # TODO finish CLI handling
 
     def play_game_gui(self, rules):
         size = rules.board_size

@@ -14,5 +14,4 @@ if __name__ == "__main__":
     pion = Pawn("white")
     print(pion.__dict__)
     # pion.move(2, 4)
-    pion.taken()
     print(pion.__dict__)

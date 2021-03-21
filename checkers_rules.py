@@ -1,7 +1,6 @@
 import board
 import checkers_pieces
 import copy
-import gui
 
 players = ["White", "Black"]
 board_size = 10
@@ -212,7 +211,7 @@ def queen_move_legal(start_line, start_row, end_line, end_row, piece, board, act
 def find_all_possible_captures(board, active_player):
     """Returns the tree roots of all legal captures for this turn"""
     path_starts = []
-    max_captures = 2 # no capture is depth 1, so save only capture from depth 2
+    max_captures = 2  # no capture is depth 1, so save only capture from depth 2
     for i, line in enumerate(board.tiles):
         for j, tile in enumerate(line):
             if tile:
@@ -261,7 +260,7 @@ def execute_take(end_line, end_row, board, capt_node):
 
 
 def game_over(board):
-    piece_counts = dict(zip(players, [0,0]))
+    piece_counts = dict(zip(players, [0, 0]))
     for line in range(board_size):
         for row in range(board_size):
             piece = piece_exists(line, row, board)
@@ -272,6 +271,7 @@ def game_over(board):
             players.remove(player)
             return True, players[0]
     return False, None
+
 
 class Turn:
     def __init__(self, active_player, board):
