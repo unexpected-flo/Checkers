@@ -12,20 +12,20 @@ def initialize_board(size):
         if i % 2 == 0:
             for j in range(game_board.size):
                 if j % 2 != 0:
-                    game_board.add_piece(i, j, checkers_pieces.Pawn("Black"))
+                    game_board.add_piece(i, j, checkers_pieces.Pawn(players[1]))
         else:
             for j in range(game_board.size):
                 if j % 2 == 0:
-                    game_board.add_piece(i, j, checkers_pieces.Pawn("Black"))
+                    game_board.add_piece(i, j, checkers_pieces.Pawn(players[1]))
     for i in range(1, 5):
         if i % 2 == 0:
             for j in range(game_board.size):
                 if j % 2 != 0:
-                    game_board.add_piece(-i, j, checkers_pieces.Pawn("White"))
+                    game_board.add_piece(-i, j, checkers_pieces.Pawn(players[0]))
         else:
             for j in range(game_board.size):
                 if j % 2 == 0:
-                    game_board.add_piece(-i, j, checkers_pieces.Pawn("White"))
+                    game_board.add_piece(-i, j, checkers_pieces.Pawn(players[0]))
     return game_board
 
 
@@ -103,7 +103,7 @@ class CapturePath:
         lr_depth = max([x.depth() for x in self.lower_right]) if self.lower_right else 0
         return max(ul_depth, ur_depth, ll_depth, lr_depth) + 1
 
-    def prune_tree(self):
+    def prune_tree(self):  # necessary to keep only the paths leading to the most captures
         max_depth = self.depth()
         branches = [self.upper_left, self.upper_right, self.lower_left, self.lower_right]
         for branch in branches:
@@ -128,7 +128,7 @@ def piece_exists(line, row, board):
 
 
 def pawn_to_promote(end_line, piece):
-    if end_line == 0 or end_line == board_size - 1:
+    if (end_line == 0 and piece.owner == players[0]) or (end_line == board_size - 1 and piece.owner == players[1]):
         if not piece.promoted:
             piece.promote()
 
@@ -179,7 +179,7 @@ def queen_can_capture_from_position(line, row, board, active_player, directions=
 def pawn_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player):
     """returns True if the considered move is legal"""
     if active_player == piece.owner and not piece_exists(end_line, end_row, board):
-        if piece.type == "Black_pawn":
+        if piece.type == "{}_pawn".format(players[1]):
             direction = -1
         else:
             direction = 1
@@ -209,7 +209,7 @@ def queen_move_legal(start_line, start_row, end_line, end_row, piece, board, act
 
 
 def find_all_possible_captures(board, active_player):
-    """Returns the tree roots of all legal captures for this turn"""
+    """Returns the tree roots of all legal captures for this turn, return empty list if no captures possible"""
     path_starts = []
     max_captures = 2  # no capture is depth 1, so save only capture from depth 2
     for i, line in enumerate(board.tiles):
@@ -223,6 +223,20 @@ def find_all_possible_captures(board, active_player):
                 elif pot_max_capt == max_captures:
                     path_starts.append(pot_path)
     return path_starts
+
+
+def find_all_possible_moves(board, active_player):
+    pot_moves = []
+    for line in range(board.size):
+        for row in range(board.size):
+            piece = piece_exists(line, row, board)
+            if piece:
+                dir_tested = -1 if active_player == players[0] else 1
+                if pawn_move_legal(line, row, line + dir_tested, row + 1, piece, board, active_player):
+                    pot_moves.append(((line, row), (line + dir_tested, row + 1)))
+                if pawn_move_legal(line, row, line + dir_tested, row - 1, piece, board, active_player):
+                    pot_moves.append(((line, row), (line + dir_tested, row - 1)))
+    return pot_moves
 
 
 def take_legal(capt_node, end_line, end_row):
@@ -259,7 +273,8 @@ def execute_take(end_line, end_row, board, capt_node):
         return False
 
 
-def game_over(board):
+def game_over(board, active_player):
+    """Tests the game over conditions return True and the winning player if one condition is met"""
     piece_counts = dict(zip(players, [0, 0]))
     for line in range(board_size):
         for row in range(board_size):
@@ -267,9 +282,16 @@ def game_over(board):
             if piece:
                 piece_counts[piece.owner] += 1
     for player, pieces in piece_counts.items():
-        if pieces == 0:
+        if pieces == 0:  # if a player has no more pieces they lose the game
             players.remove(player)
             return True, players[0]
+
+    pot_moves = find_all_possible_moves(board, active_player)
+    pot_capt = find_all_possible_captures(board, active_player)
+    if not pot_moves and not pot_capt:  # if a player cannot move they lose the game
+        players.remove(active_player)
+        return True, players[0]
+
     return False, None
 
 
@@ -294,6 +316,8 @@ class Turn:
                             if not any(branches):
                                 pawn_to_promote(end_line, piece)
                                 return True
+                            else:
+                                return False
 
             else:
                 moved = execute_move(start_line, start_row, end_line, end_row, board, piece, self.player)

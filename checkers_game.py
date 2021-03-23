@@ -1,13 +1,20 @@
-
 import checkers_rules as rules
 import gui
+import checkers_AI as ai
+
+ai_selected = "random"
+ai_types = {"random": ai.RandomAI, "minmax": ai.MinmaxAI}
 
 
 class Game:
-    def __init__(self, players):
+    def __init__(self, players, play_with_ai=True, interface="gui"):
         self.players = players
         self.active_player = players[0]
         self.ongoing = True
+        self.interface = interface
+        self.play_with_ai = play_with_ai
+        if self.play_with_ai:
+            self.skynet = ai_types[ai_selected](players[1], players[0])
 
     def change_active_player(self):
         for player in self.players:
@@ -15,43 +22,56 @@ class Game:
                 self.active_player = player
                 break
 
-    def play_turn(self, board, window):
+    def play_turn(self, board, window=None):
         end_turn = False
         turn = rules.Turn(self.active_player, board)
         while not end_turn:
-            start_line, start_row = gui.get_event(window)
-            end_line, end_row = gui.get_event(window)
+            if self.play_with_ai and self.active_player == self.skynet.color:
+                start_line, start_row, end_line, end_row = self.skynet.play(board)
+            else:
+                start_line, start_row, end_line, end_row = self.get_user_input(window)
             print(start_line, start_row, end_line, end_row)
             end_turn = turn.play_turn(start_line, start_row, end_line, end_row, board)
-            gui.redraw_board(window, board)
+            self.display_board(board, window)
             if end_turn:
                 self.change_active_player()
 
-    def play_game_cli(self, rules):
-        size = rules.board_size
-        game_board = rules.initialize_board(size)
-        while self.ongoing:
-            gui.draw_cli_board(game_board)
-            start_line, start_row = [int(x) for x in input().split(sep=",")]
-            # TODO finish CLI handling
+    def get_user_input(self, window):
+        if self.interface == "gui":
+            start_line, start_row = gui.get_event(window)
+            end_line, end_row = gui.get_event(window)
+        elif self.interface == "cli":
+            print("input x_start, y_start, x_end, y_end")
+            start_line, start_row, end_line, end_row = [int(x) for x in input().split(sep=",")]
+        else:
+            raise(ValueError("Interface selected invalid, possible choices are \"gui\" or \"cli\""))
+        return start_line, start_row, end_line, end_row
 
-    def play_game_gui(self, rules):
+    def display_board(self, board, window=None):
+        if self.interface == "gui":
+            gui.redraw_board(window, board)
+        elif self.interface == "cli":
+            gui.draw_cli_board(board)
+        else:
+            raise (ValueError("Interface selected invalid, possible choices are \"gui\" or \"cli\""))
+
+    def play_game(self):
         size = rules.board_size
         game_board = rules.initialize_board(size)
-        window = gui.create_window("Checkers", size, game_board)
+        if self.interface == "gui":
+            window = gui.create_window("Checkers", size, game_board)
+        else:
+            window = None
+            self.display_board(game_board)
         while self.ongoing:
             print("{} turn".format(self.active_player))
             self.play_turn(game_board, window)
-            finished, winner = rules.game_over(game_board)
-            if finished:
+            game_over, winner = rules.game_over(game_board, self.active_player)
+            if game_over:
                 self.ongoing = False
                 print("{} won".format(winner))
 
 
 if __name__ == "__main__":
-    gui_enabled = True
     game = Game(rules.players)
-    if gui_enabled:
-        game.play_game_gui(rules)
-    else:
-        game.play_game_cli(rules)
+    game.play_game()

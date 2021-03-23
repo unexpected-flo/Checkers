@@ -10,6 +10,7 @@ odd_color = '#F0D9B5'
 def draw_cli_board(game_board):
     for line in game_board.tiles:
         print([game_gui.cli_display[x.type] if x else "_" for x in line])
+        print()  # To try to make the displayed board a bit more square
     print()
 
 
