@@ -88,13 +88,13 @@ class CapturePath:
         line, row = self.coords
         ul, ur, ll, lr, = queen_can_capture_from_position(line, row, self.saved_board, active_player)
         if ul[0] and "ul" in directions:
-            evaluate_step(self, line, row, ul, board, active_player, ["ul", "ur", "ll"], -1, -1, self.upper_left)
+            evaluate_step(self, line, row, ul, board, active_player, ("ul", "ur", "ll"), -1, -1, self.upper_left)
         if ur[0] and "ur" in directions:
-            evaluate_step(self, line, row, ur, board, active_player, ["ul", "ur", "lr"], -1, +1, self.upper_right)
+            evaluate_step(self, line, row, ur, board, active_player, ("ul", "ur", "lr"), -1, +1, self.upper_right)
         if ll[0] and "ll" in directions:
-            evaluate_step(self, line, row, ll, board, active_player, ["ul", "lr", "ll"], +1, -1, self.lower_left)
+            evaluate_step(self, line, row, ll, board, active_player, ("ul", "lr", "ll"), +1, -1, self.lower_left)
         if lr[0] and "lr" in directions:
-            evaluate_step(self, line, row, lr, board, active_player, ["ur", "lr", "ll"], +1, +1, self.lower_right)
+            evaluate_step(self, line, row, lr, board, active_player, ("ur", "lr", "ll"), +1, +1, self.lower_right)
 
     def depth(self):
         ul_depth = max([x.depth() for x in self.upper_left]) if self.upper_left else 0
@@ -186,8 +186,7 @@ def pawn_move_legal(start_line, start_row, end_line, end_row, piece, board, acti
         return (start_line == end_line + direction) and ((start_row == end_row + 1) or (start_row == end_row - 1))
 
 
-def queen_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player):
-    """returns True if the considered move is legal"""
+def find_all_queen_moves(start_line, start_row, piece, board, active_player):
     def test_diagonal(line, row, board, l_off, r_off, pot_moves):
         while 0 <= line + l_off < board.size and 0 <= row + r_off < board.size:
             if not(piece_exists(line + l_off, row + r_off, board)):
@@ -198,14 +197,23 @@ def queen_move_legal(start_line, start_row, end_line, end_row, piece, board, act
                 return
 
     potential_destinations = set()
-    if active_player == piece.owner and not piece_exists(end_line, end_row, board):
+    if active_player == piece.owner:
         test_diagonal(start_line, start_row, board, -1, -1, potential_destinations)
         test_diagonal(start_line, start_row, board, +1, -1, potential_destinations)
         test_diagonal(start_line, start_row, board, -1, +1, potential_destinations)
         test_diagonal(start_line, start_row, board, +1, +1, potential_destinations)
-        if (end_line, end_row) in potential_destinations:
-            return True
-    return False
+    return potential_destinations
+
+
+def queen_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player):
+    """returns True if the considered move is legal"""
+    if piece_exists(end_line, end_row, board):
+        return False
+    potential_destinations = find_all_queen_moves(start_line, start_row, piece, board, active_player)
+    if (end_line, end_row) in potential_destinations:
+        return True
+    else:
+        return False
 
 
 def find_all_possible_captures(board, active_player):
@@ -231,11 +239,15 @@ def find_all_possible_moves(board, active_player):
         for row in range(board.size):
             piece = piece_exists(line, row, board)
             if piece:
-                dir_tested = -1 if active_player == players[0] else 1
-                if pawn_move_legal(line, row, line + dir_tested, row + 1, piece, board, active_player):
-                    pot_moves.append(((line, row), (line + dir_tested, row + 1)))
-                if pawn_move_legal(line, row, line + dir_tested, row - 1, piece, board, active_player):
-                    pot_moves.append(((line, row), (line + dir_tested, row - 1)))
+                if not piece.promoted:
+                    dir_tested = -1 if active_player == players[0] else 1
+                    if pawn_move_legal(line, row, line + dir_tested, row + 1, piece, board, active_player):
+                        pot_moves.append(((line, row), (line + dir_tested, row + 1)))
+                    if pawn_move_legal(line, row, line + dir_tested, row - 1, piece, board, active_player):
+                        pot_moves.append(((line, row), (line + dir_tested, row - 1)))
+                else:
+                    queen_dest = find_all_queen_moves(line, row, piece, board, active_player)
+                    pot_moves.extend(zip([(line, row)]*len(queen_dest), queen_dest))
     return pot_moves
 
 
