@@ -2,19 +2,16 @@ import checkers_rules as rules
 import gui
 import checkers_AI as ai
 
-ai_selected = "random"
-ai_types = {"random": ai.RandomAI, "minmax": ai.MinmaxAI}
-
 
 class Game:
-    def __init__(self, players, play_with_ai=True, interface="gui"):
+    def __init__(self, players, play_with_ai=True, interface="gui", ai_args=None):
         self.players = players
         self.active_player = players[0]
         self.ongoing = True
         self.interface = interface
         self.play_with_ai = play_with_ai
         if self.play_with_ai:
-            self.skynet = ai_types[ai_selected](players[1], players[0])
+            self.skynet = ai.ai_types[ai_selected](*ai_args)
 
     def change_active_player(self):
         for player in self.players:
@@ -73,5 +70,7 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(rules.players)
+    ai_selected = "minmax"
+    ai_settings = (rules.players[1], rules.players[0])
+    game = Game(rules.players, play_with_ai=True, interface="gui", ai_args=ai_settings)
     game.play_game()

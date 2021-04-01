@@ -295,14 +295,14 @@ def game_over(board, active_player):
                 piece_counts[piece.owner] += 1
     for player, pieces in piece_counts.items():
         if pieces == 0:  # if a player has no more pieces they lose the game
-            players.remove(player)
-            return True, players[0]
+            winner = [x for x in players if x is not active_player]
+            return True, winner[0]
 
     pot_moves = find_all_possible_moves(board, active_player)
     pot_capt = find_all_possible_captures(board, active_player)
     if not pot_moves and not pot_capt:  # if a player cannot move they lose the game
-        players.remove(active_player)
-        return True, players[0]
+        winner = [x for x in players if x is not active_player]
+        return True, winner[0]
 
     return False, None
 
