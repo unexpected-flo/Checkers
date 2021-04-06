@@ -27,6 +27,7 @@ def redraw_board(window, board):
             elem = window.FindElement(key=(i, j))
             elem.Update(button_color=('white', color),
                         image_filename=piece_image, )
+    window.Refresh()
 
 
 def create_window(game_name, size, board):

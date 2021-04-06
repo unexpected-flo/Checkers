@@ -8,7 +8,7 @@ import time
 def slow_play(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        time.sleep(5)
+        time.sleep(1)
         return func(*args, **kwargs)
     return wrapper
 
@@ -41,7 +41,7 @@ class AI:
 
 
 class RandomAI(AI):
-    # @slow_play  # TODO find why this is not working with the gui
+    @slow_play
     def play(self, board):
         pot_moves, pot_takes = self.potential_actions(board, self.color)
         if pot_moves:
@@ -119,7 +119,7 @@ class MinmaxAI(AI):
         if game_over:
             return -20 if active_player == self.color else 20, leading_move  # there are 20 pieces so max score is 20
         if depth == 0:
-            return self.score_position(board), leading_move  # there are 20 pieces so max score is 20
+            return self.score_position(board), leading_move
 
         eval_boards = self.evaluate_moves(board, active_player)
 
@@ -158,7 +158,7 @@ class MinmaxAI(AI):
         if game_over:
             return -20 if active_player == self.color else 20, leading_move  # there are 20 pieces so max score is 20
         if depth == 0:
-            return self.score_position(board), leading_move  # there are 20 pieces so max score is 20
+            return self.score_position(board), leading_move
 
         eval_boards = self.evaluate_moves(board, active_player)
 
@@ -203,7 +203,7 @@ class MinmaxAI(AI):
             return min_score, best_move
 
     def play(self, board):
-        _, ((sl, sr), (el, er)) = self.minmax_ab(board, self.color, 3)
+        _, ((sl, sr), (el, er)) = self.minmax_ab(board, self.color, self.depth)
         return sl, sr, el, er
 
 
