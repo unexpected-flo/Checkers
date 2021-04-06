@@ -17,7 +17,6 @@ class AI:
     def __init__(self, ia_color, adv_color):
         self.color = ia_color
         self.adversary_color = adv_color
-        self.current_take = None
 
     def score_position(self, board):
         piece_counts = dict(zip(rules.players, [0, 0]))
@@ -44,18 +43,7 @@ class AI:
 class RandomAI(AI):
     # @slow_play  # TODO find why this is not working with the gui
     def play(self, board):
-        if not self.current_take:
-            pot_moves, pot_takes = self.potential_actions(board, self.color)
-        else:
-            node = self.current_take
-            destinations = [node.upper_left, node.upper_right, node.lower_left, node.lower_right]
-            if not (any(destinations)):
-                self.current_take = []
-                pot_moves, pot_takes = self.potential_actions(board, self.color)
-            else:
-                pot_moves = []
-                pot_takes = self.current_take
-
+        pot_moves, pot_takes = self.potential_actions(board, self.color)
         if pot_moves:
             guess = randint(0, len(pot_moves)-1)
             (sl, sr), (el, er) = pot_moves[guess]
@@ -111,7 +99,6 @@ class MinmaxAI(AI):
         return boards
 
     def evaluate_moves(self, board, active_player):
-
         moves_eval, takes_eval = self.potential_actions(board, active_player)
         after_move_boards = []
         if moves_eval:
@@ -138,12 +125,10 @@ class MinmaxAI(AI):
 
         if active_player == self.color:  # player trying to maximize score
             max_score = float("-inf")
-
             for brd in eval_boards:
                 first_move = leading_move
                 (test_boards, move) = brd
                 for test_board in test_boards:
-
                     if first_move is None:
                         first_move = move
 
@@ -151,7 +136,6 @@ class MinmaxAI(AI):
                     if score > max_score:
                         max_score = score
                         best_move = temp_move
-
             return max_score, best_move
 
         else:  # player trying to minimize score
@@ -160,7 +144,6 @@ class MinmaxAI(AI):
                 first_move = leading_move
                 (test_boards, move) = brd
                 for test_board in test_boards:
-
                     if first_move is None:
                         first_move = move
 
@@ -168,7 +151,6 @@ class MinmaxAI(AI):
                     if score < min_score:
                         min_score = score
                         best_move = temp_move
-
             return min_score, best_move
 
     def minmax_ab(self, board, active_player, depth, leading_move=None, alpha=float("-inf"), beta=float("inf")):
@@ -182,12 +164,10 @@ class MinmaxAI(AI):
 
         if active_player == self.color:  # player trying to maximize score
             max_score = float("-inf")
-
             for brd in eval_boards:
                 first_move = leading_move
                 (test_boards, move) = brd
                 for test_board in test_boards:
-
                     if first_move is None:
                         first_move = move
 
@@ -196,9 +176,10 @@ class MinmaxAI(AI):
                         max_score = score
                         best_move = temp_move
                     alpha = max(score, alpha)
+                    if alpha >= beta:
+                        break
                 if alpha >= beta:
                     break
-
             return max_score, best_move
 
         else:  # player trying to minimize score
@@ -207,7 +188,6 @@ class MinmaxAI(AI):
                 first_move = leading_move
                 (test_boards, move) = brd
                 for test_board in test_boards:
-
                     if first_move is None:
                         first_move = move
 
@@ -216,14 +196,16 @@ class MinmaxAI(AI):
                         min_score = score
                         best_move = temp_move
                     beta = min(score, beta)
+                    if beta <= alpha:
+                        break
                 if beta <= alpha:
                     break
-
             return min_score, best_move
 
     def play(self, board):
         _, ((sl, sr), (el, er)) = self.minmax_ab(board, self.color, 3)
-        return sl, sr, el ,er
+        return sl, sr, el, er
+
 
 ai_types = {"random": RandomAI,
             "minmax": MinmaxAI}

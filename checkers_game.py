@@ -38,7 +38,7 @@ class Game:
             start_line, start_row = gui.get_event(window)
             end_line, end_row = gui.get_event(window)
         elif self.interface == "cli":
-            print("input x_start, y_start, x_end, y_end")
+            print("input start line, start column, end line, end column")
             start_line, start_row, end_line, end_row = [int(x) for x in input().split(sep=",")]
         else:
             raise(ValueError("Interface selected invalid, possible choices are \"gui\" or \"cli\""))
