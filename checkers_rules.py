@@ -1,7 +1,7 @@
 import board
 import checkers_pieces
 import copy
-
+from abstract_rules import AbstractTurn
 players = ["White", "Black"]
 board_size = 10
 
@@ -117,6 +117,8 @@ class CapturePath:
 
 
 def piece_exists(line, row, board):
+    """Check if a piece exists in the tile, if a piece exists returns the piece, if not return False.
+    If the coordinates are outside of the board returns True to block all moves outside of the board."""
     size = board.size
     if 0 <= line < size and 0 <= row < size:
         if board.tiles[line][row]:
@@ -134,6 +136,8 @@ def pawn_to_promote(end_line, piece):
 
 
 def can_capture_from_position(line, row, board, active_player):
+    """Returns 4 truthy values for whether a pawn can capture in the 4 diagonals
+    respectively upper left, upper right, lower left, lower right"""
     def can_capture(target_line, target_row, board):
         piece = piece_exists(line, row, board)
         piece_to_capture = piece_exists(target_line, target_row, board)
@@ -153,6 +157,8 @@ def can_capture_from_position(line, row, board, active_player):
 
 
 def queen_can_capture_from_position(line, row, board, active_player, directions=("ul", "ur", "ll", "lr")):
+    """Returns 4 truthy values and the coordinates of the closest destination tiles for wether a queen
+     can capture in the 4 diagonals respectively upper left, upper right, lower left, lower right"""
     def test_diagonal(line, row, board, active_player, l_off, r_off):
         piece = piece_exists(line, row, board)
         while 0 <= line + l_off < board.size and 0 <= row + r_off < board.size:
@@ -177,7 +183,7 @@ def queen_can_capture_from_position(line, row, board, active_player, directions=
 
 
 def pawn_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player):
-    """returns True if the considered move is legal"""
+    """Returns True if the considered move is legal"""
     if active_player == piece.owner and not piece_exists(end_line, end_row, board):
         if piece.type == "{}_pawn".format(players[1]):
             direction = -1
@@ -187,6 +193,7 @@ def pawn_move_legal(start_line, start_row, end_line, end_row, piece, board, acti
 
 
 def find_all_queen_moves(start_line, start_row, piece, board, active_player):
+    """Returns a set containing all the tiles available as queen destination"""
     def test_diagonal(line, row, board, l_off, r_off, pot_moves):
         while 0 <= line + l_off < board.size and 0 <= row + r_off < board.size:
             if not(piece_exists(line + l_off, row + r_off, board)):
@@ -206,7 +213,7 @@ def find_all_queen_moves(start_line, start_row, piece, board, active_player):
 
 
 def queen_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player):
-    """returns True if the considered move is legal"""
+    """Returns True if the considered move is legal"""
     if piece_exists(end_line, end_row, board):
         return False
     potential_destinations = find_all_queen_moves(start_line, start_row, piece, board, active_player)
@@ -234,6 +241,7 @@ def find_all_possible_captures(board, active_player):
 
 
 def find_all_possible_moves(board, active_player):
+    """Returns a list of tuples (start tile, end tile) for each possible move for the active player"""
     pot_moves = []
     for line in range(board.size):
         for row in range(board.size):
@@ -252,6 +260,7 @@ def find_all_possible_moves(board, active_player):
 
 
 def take_legal(capt_node, end_line, end_row):
+    """Returns True and the destination tile if the attempted capture is legal, else Returns False, None"""
     branches = [capt_node.upper_left, capt_node.upper_right, capt_node.lower_left, capt_node.lower_right]
     for branch in branches:
         for pot_destination in branch:
@@ -261,7 +270,7 @@ def take_legal(capt_node, end_line, end_row):
 
 
 def execute_move(start_line, start_row, end_line, end_row, board, piece, active_player):
-    """move the piece if the movement considered is legal"""
+    """Moves the piece if the movement considered is legal"""
     if piece:
         if ((not piece.promoted
                 and pawn_move_legal(start_line, start_row, end_line, end_row, piece, board, active_player)) or
@@ -273,8 +282,8 @@ def execute_move(start_line, start_row, end_line, end_row, board, piece, active_
 
 
 def execute_take(end_line, end_row, board, capt_node):
-    """move the piece and remove the enemy piece if the take is legal, return the next step of the captures
-     if the move is legal, else return false"""
+    """Moves the piece and removes the enemy piece if the take is legal.
+     Returns the next step of the captures if the move is legal, else returns false"""
     start_line, start_row = capt_node.coords
     legal, destination_node = take_legal(capt_node, end_line, end_row)
     if legal:
@@ -307,12 +316,15 @@ def game_over(board, active_player):
     return False, None
 
 
-class Turn:
+class Turn(AbstractTurn):
     def __init__(self, active_player, board):
+        super().__init__()
         self.player = active_player
         self.roots = find_all_possible_captures(board, self.player)
 
     def play_turn(self, start_line, start_row, end_line, end_row, board):
+        """Tries to execute the move given as input. Returns True if the move was executed,
+        or False if the move was impossible"""
         piece = piece_exists(start_line, start_row, board)
         if piece:
             if self.roots:

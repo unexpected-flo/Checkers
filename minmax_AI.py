@@ -1,22 +1,12 @@
+from abstract_AI import AI
 import checkers_rules as rules
 from copy import deepcopy
-from random import randint
-import functools
-import time
 
 
-def slow_play(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        time.sleep(1)
-        return func(*args, **kwargs)
-    return wrapper
-
-
-class AI:
-    def __init__(self, ia_color, adv_color):
-        self.color = ia_color
-        self.adversary_color = adv_color
+class MinmaxAI(AI):
+    def __init__(self, ia_color, adv_color, depth=3):
+        super().__init__(ia_color, adv_color)
+        self.depth = depth
 
     def score_position(self, board):
         piece_counts = dict(zip(rules.players, [0, 0]))
@@ -28,46 +18,6 @@ class AI:
 
         score = piece_counts[self.color] - piece_counts[self.adversary_color]
         return score
-
-    @staticmethod
-    def potential_actions(board, active_player):
-        pot_moves = []
-        pot_takes = rules.find_all_possible_captures(board, active_player)
-
-        if not pot_takes:
-            pot_moves = rules.find_all_possible_moves(board, active_player)
-
-        return pot_moves, pot_takes
-
-
-class RandomAI(AI):
-    @slow_play
-    def play(self, board):
-        pot_moves, pot_takes = self.potential_actions(board, self.color)
-        if pot_moves:
-            guess = randint(0, len(pot_moves)-1)
-            (sl, sr), (el, er) = pot_moves[guess]
-            return sl, sr, el, er
-        if pot_takes:
-            guess = randint(0, len(pot_takes)-1)
-            node = pot_takes[guess]
-            pot_dest = []
-            destinations = [node.upper_left, node.upper_right, node.lower_left, node.lower_right]
-            for branch in destinations:
-                for dest in branch:
-                    if dest:
-                        pot_dest.append(dest)
-            dest_guess = randint(0, len(pot_dest)-1)
-            dest = pot_dest[dest_guess]
-            sl, sr = node.coords
-            el, er = dest.coords
-            return sl, sr, el, er
-
-
-class MinmaxAI(AI):
-    def __init__(self, ia_color, adv_color, depth=3):
-        super().__init__(ia_color, adv_color)
-        self.depth = depth
 
     def find_boards_after_moves(self, board, active_player):
         boards = []
@@ -207,13 +157,8 @@ class MinmaxAI(AI):
         return sl, sr, el, er
 
 
-ai_types = {"random": RandomAI,
-            "minmax": MinmaxAI}
-
 if __name__ == "__main__":
-    ai = AI("ia_color", "adv_color")
-    print(ai.__dict__)
 
-    print(AI.__dict__.keys())
-    print(RandomAI.__dict__.keys())
     print(MinmaxAI.__dict__.keys())
+    minmax = MinmaxAI("ia_color", "adv_color")
+    print(minmax.__dict__.keys())

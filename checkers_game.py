@@ -1,6 +1,6 @@
 import checkers_rules as rules
 import gui
-import checkers_AI as ai
+import ai_list as ai
 
 
 class Player:
@@ -81,9 +81,9 @@ class Game:
 if __name__ == "__main__":
     player1_ai = "random"
     player1_ai_settings = (rules.players[0], rules.players[1])
-    player2_ai = "minmax"
+    player2_ai = "random"
     player2_ai_settings = (rules.players[1], rules.players[0])
-    player1 = Player(rules.players[0], True, player1_ai, player1_ai_settings)
+    player1 = Player(rules.players[0], False, player1_ai, player1_ai_settings)
     player2 = Player(rules.players[1], False, player2_ai, player2_ai_settings)
     players = [player1, player2]
     game = Game(players, interface="gui")
